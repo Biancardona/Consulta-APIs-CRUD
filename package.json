@@ -1,0 +1,21 @@
+{
+  "name": "consulta-apis-crud",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Consulta de IPstack, Marketstack y Zenserp con CRUD de registros en MongoDB Atlas",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "mongodb": "^6.21.0",
+    "sqlite3": "^6.0.1"
+  }
+}

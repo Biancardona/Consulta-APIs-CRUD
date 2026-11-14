@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Consulta APIs públicas y administra registros con operaciones CRUD en MongoDB.">
+    <meta name="description" content="Consulta APIs públicas y administra registros con operaciones CRUD en SQLite.">
     <title>Consulta de APIs públicas | Gestor CRUD</title>
     <link rel="stylesheet" href="styles.css">
     <script src="app.js" defer></script>
@@ -13,80 +13,94 @@
         <header class="encabezado">
             <div class="etiqueta">Práctica de servicios web y bases de datos</div>
             <h1>Consulta de APIs públicas</h1>
-            <p>Consulta información de IPstack, Marketstack y Zenserp. Guarda tus búsquedas y administra los registros con operaciones <strong>CRUD</strong> en MongoDB.</p>
-            <a class="enlace-ancla" href="#administrar">Ir al administrador de registros ↓</a>
+            <p>Consulta información de IPstack, Marketstack y Zenserp. Guarda tus búsquedas y administra los registros con operaciones <strong>CRUD</strong> en SQLite.</p>
+            <a id="enlaceAdministrador" class="enlace-ancla" href="#administrar" hidden>Ir al administrador de registros ↓</a>
         </header>
 
-        <div class="separador-titulo">
-            <h2>01 <span>Servicios externos</span></h2>
-            <p>Realiza una búsqueda y, cuando obtengas resultados, puedes guardar la consulta.</p>
+        <section class="tarjeta" aria-labelledby="tituloSesion">
+            <h2 id="tituloSesion">Acceso de administrador</h2>
+            <form id="formLogin" class="formulario-registro">
+                <div class="campo"><label for="correoAdmin">Correo electrónico</label><input id="correoAdmin" type="email" autocomplete="username" required></div>
+                <div class="campo"><label for="claveAdmin">Contraseña</label><input id="claveAdmin" type="password" autocomplete="current-password" required></div>
+                <div class="acciones-formulario"><button class="boton boton-primario" type="submit">Iniciar sesión</button></div>
+            </form>
+            <p id="mensajeSesion" class="mensaje" role="status" aria-live="polite"></p>
+            <button id="cerrarSesion" class="boton boton-secundario" type="button" hidden>Cerrar sesión</button>
+        </section>
+
+        <div id="panelAplicacion" hidden>
+            <div class="separador-titulo">
+                <h2>01 <span>Servicios externos</span></h2>
+                <p>Realiza una búsqueda y, cuando obtengas resultados, puedes guardar la consulta.</p>
+            </div>
+
+            <section class="tarjeta" aria-labelledby="tituloIP">
+                <div class="cabecera-tarjeta">
+                    <span class="numero">01</span>
+                    <div><h3 id="tituloIP">IPstack</h3><p>Consulta la ubicación aproximada asociada a una dirección IP.</p></div>
+                </div>
+                <form id="formIP" class="buscador">
+                    <div class="campo"><label for="ip">Dirección IP</label><input type="text" id="ip" placeholder="Ejemplo: 8.8.8.8" maxlength="45" required></div>
+                    <button type="submit" class="boton boton-primario">Buscar IP</button>
+                </form>
+                <p id="mensajeIP" class="mensaje" role="status" aria-live="polite"></p>
+                <div class="tabla-contenedor"><table id="tablaIP"><thead><tr><th>IP</th><th>País</th><th>Región</th><th>Ciudad</th><th>Latitud</th><th>Longitud</th></tr></thead><tbody></tbody></table></div>
+                <button id="guardarIP" class="boton boton-secundario boton-guardar" type="button" hidden>+ Guardar esta consulta</button>
+            </section>
+
+            <section class="tarjeta" aria-labelledby="tituloMercado">
+                <div class="cabecera-tarjeta">
+                    <span class="numero">02</span>
+                    <div><h3 id="tituloMercado">Marketstack</h3><p>Consulta datos históricos de una acción por símbolo bursátil.</p></div>
+                </div>
+                <form id="formMercado" class="buscador">
+                    <div class="campo"><label for="simbolo">Símbolo bursátil</label><input type="text" id="simbolo" placeholder="Ejemplo: AAPL" maxlength="20" required></div>
+                    <button type="submit" class="boton boton-primario">Buscar símbolo</button>
+                </form>
+                <p id="mensajeMercado" class="mensaje" role="status" aria-live="polite"></p>
+                <div class="tabla-contenedor"><table id="tablaMercado"><thead><tr><th>Símbolo</th><th>Bolsa</th><th>Fecha</th><th>Apertura</th><th>Máximo</th><th>Mínimo</th><th>Cierre</th><th>Volumen</th></tr></thead><tbody></tbody></table></div>
+                <button id="guardarMercado" class="boton boton-secundario boton-guardar" type="button" hidden>+ Guardar esta consulta</button>
+            </section>
+
+            <section class="tarjeta" aria-labelledby="tituloBusqueda">
+                <div class="cabecera-tarjeta">
+                    <span class="numero">03</span>
+                    <div><h3 id="tituloBusqueda">Zenserp</h3><p>Busca resultados orgánicos de páginas web.</p></div>
+                </div>
+                <form id="formBusqueda" class="buscador">
+                    <div class="campo"><label for="busqueda">Término de búsqueda</label><input type="text" id="busqueda" placeholder="Ejemplo: Inteligencia artificial" maxlength="200" required></div>
+                    <button type="submit" class="boton boton-primario">Buscar en la web</button>
+                </form>
+                <p id="mensajeBusqueda" class="mensaje" role="status" aria-live="polite"></p>
+                <div class="tabla-contenedor"><table id="tablaBusqueda"><thead><tr><th>Posición</th><th>Título</th><th>Descripción</th><th>Enlace</th></tr></thead><tbody></tbody></table></div>
+                <button id="guardarBusqueda" class="boton boton-secundario boton-guardar" type="button" hidden>+ Guardar esta consulta</button>
+            </section>
+
+            <div class="separador-titulo" id="administrar">
+                <h2>02 <span>Administrador de registros</span></h2>
+                <p>Crea, consulta, edita y elimina tus consultas guardadas. Los cambios se almacenan en SQLite.</p>
+            </div>
+
+            <section class="tarjeta panel-crud" aria-labelledby="tituloCrud">
+                <div class="cabecera-tarjeta">
+                    <span class="numero numero-verde">DB</span>
+                    <div><h3 id="tituloCrud">Gestión CRUD</h3><p>También puedes crear registros manualmente sin consumir una API externa.</p></div>
+                </div>
+                <form id="formRegistro" class="formulario-registro">
+                    <div class="campo"><label for="servicioRegistro">Servicio</label><select id="servicioRegistro" required><option value="IPstack">IPstack</option><option value="Marketstack">Marketstack</option><option value="Zenserp">Zenserp</option></select></div>
+                    <div class="campo"><label for="consultaRegistro">Consulta</label><input id="consultaRegistro" type="text" maxlength="200" placeholder="IP, símbolo bursátil o término" required></div>
+                    <div class="campo campo-nota"><label for="notaRegistro">Nota (opcional)</label><textarea id="notaRegistro" rows="2" maxlength="500" placeholder="¿Para qué guardas esta consulta?"></textarea></div>
+                    <div class="acciones-formulario"><button id="botonRegistro" type="submit" class="boton boton-primario">Crear registro</button><button id="cancelarEdicion" type="button" class="boton boton-secundario" hidden>Cancelar edición</button></div>
+                </form>
+                <p id="mensajeRegistro" class="mensaje" role="status" aria-live="polite"></p>
+                <div class="titulo-lista"><h4>Registros guardados <span id="totalRegistros">(0)</span></h4><button type="button" id="recargarRegistros" class="boton boton-secundario">Actualizar lista</button></div>
+                <div class="tabla-contenedor"><table id="tablaRegistros"><thead><tr><th>Servicio</th><th>Consulta</th><th>Nota</th><th>Fecha de creación</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>
+                <p class="texto-ayuda">Utiliza <strong>Volver a consultar</strong> para recuperar información actualizada de una búsqueda guardada. <strong>Editar</strong> y <strong>Eliminar</strong> modifican únicamente tu registro en SQLite, no los datos de los servicios externos.</p>
+            </section>
+
         </div>
 
-        <section class="tarjeta" aria-labelledby="tituloIP">
-            <div class="cabecera-tarjeta">
-                <span class="numero">01</span>
-                <div><h3 id="tituloIP">IPstack</h3><p>Consulta la ubicación aproximada asociada a una dirección IP.</p></div>
-            </div>
-            <form id="formIP" class="buscador">
-                <div class="campo"><label for="ip">Dirección IP</label><input type="text" id="ip" placeholder="Ejemplo: 8.8.8.8" maxlength="45" required></div>
-                <button type="submit" class="boton boton-primario">Buscar IP</button>
-            </form>
-            <p id="mensajeIP" class="mensaje" role="status" aria-live="polite"></p>
-            <div class="tabla-contenedor"><table id="tablaIP"><thead><tr><th>IP</th><th>País</th><th>Región</th><th>Ciudad</th><th>Latitud</th><th>Longitud</th></tr></thead><tbody></tbody></table></div>
-            <button id="guardarIP" class="boton boton-secundario boton-guardar" type="button" hidden>+ Guardar esta consulta</button>
-        </section>
-
-        <section class="tarjeta" aria-labelledby="tituloMercado">
-            <div class="cabecera-tarjeta">
-                <span class="numero">02</span>
-                <div><h3 id="tituloMercado">Marketstack</h3><p>Consulta datos históricos de una acción por símbolo bursátil.</p></div>
-            </div>
-            <form id="formMercado" class="buscador">
-                <div class="campo"><label for="simbolo">Símbolo bursátil</label><input type="text" id="simbolo" placeholder="Ejemplo: AAPL" maxlength="20" required></div>
-                <button type="submit" class="boton boton-primario">Buscar símbolo</button>
-            </form>
-            <p id="mensajeMercado" class="mensaje" role="status" aria-live="polite"></p>
-            <div class="tabla-contenedor"><table id="tablaMercado"><thead><tr><th>Símbolo</th><th>Bolsa</th><th>Fecha</th><th>Apertura</th><th>Máximo</th><th>Mínimo</th><th>Cierre</th><th>Volumen</th></tr></thead><tbody></tbody></table></div>
-            <button id="guardarMercado" class="boton boton-secundario boton-guardar" type="button" hidden>+ Guardar esta consulta</button>
-        </section>
-
-        <section class="tarjeta" aria-labelledby="tituloBusqueda">
-            <div class="cabecera-tarjeta">
-                <span class="numero">03</span>
-                <div><h3 id="tituloBusqueda">Zenserp</h3><p>Busca resultados orgánicos de páginas web.</p></div>
-            </div>
-            <form id="formBusqueda" class="buscador">
-                <div class="campo"><label for="busqueda">Término de búsqueda</label><input type="text" id="busqueda" placeholder="Ejemplo: Inteligencia artificial" maxlength="200" required></div>
-                <button type="submit" class="boton boton-primario">Buscar en la web</button>
-            </form>
-            <p id="mensajeBusqueda" class="mensaje" role="status" aria-live="polite"></p>
-            <div class="tabla-contenedor"><table id="tablaBusqueda"><thead><tr><th>Posición</th><th>Título</th><th>Descripción</th><th>Enlace</th></tr></thead><tbody></tbody></table></div>
-            <button id="guardarBusqueda" class="boton boton-secundario boton-guardar" type="button" hidden>+ Guardar esta consulta</button>
-        </section>
-
-        <div class="separador-titulo" id="administrar">
-            <h2>02 <span>Administrador de registros</span></h2>
-            <p>Crea, consulta, edita y elimina tus consultas guardadas. Los cambios se almacenan en MongoDB Atlas.</p>
-        </div>
-
-        <section class="tarjeta panel-crud" aria-labelledby="tituloCrud">
-            <div class="cabecera-tarjeta">
-                <span class="numero numero-verde">DB</span>
-                <div><h3 id="tituloCrud">Gestión CRUD</h3><p>También puedes crear registros manualmente sin consumir una API externa.</p></div>
-            </div>
-            <form id="formRegistro" class="formulario-registro">
-                <div class="campo"><label for="servicioRegistro">Servicio</label><select id="servicioRegistro" required><option value="IPstack">IPstack</option><option value="Marketstack">Marketstack</option><option value="Zenserp">Zenserp</option></select></div>
-                <div class="campo"><label for="consultaRegistro">Consulta</label><input id="consultaRegistro" type="text" maxlength="200" placeholder="IP, símbolo bursátil o término" required></div>
-                <div class="campo campo-nota"><label for="notaRegistro">Nota (opcional)</label><textarea id="notaRegistro" rows="2" maxlength="500" placeholder="¿Para qué guardas esta consulta?"></textarea></div>
-                <div class="acciones-formulario"><button id="botonRegistro" type="submit" class="boton boton-primario">Crear registro</button><button id="cancelarEdicion" type="button" class="boton boton-secundario" hidden>Cancelar edición</button></div>
-            </form>
-            <p id="mensajeRegistro" class="mensaje" role="status" aria-live="polite"></p>
-            <div class="titulo-lista"><h4>Registros guardados <span id="totalRegistros">(0)</span></h4><button type="button" id="recargarRegistros" class="boton boton-secundario">Actualizar lista</button></div>
-            <div class="tabla-contenedor"><table id="tablaRegistros"><thead><tr><th>Servicio</th><th>Consulta</th><th>Nota</th><th>Fecha de creación</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>
-            <p class="texto-ayuda">Utiliza <strong>Volver a consultar</strong> para recuperar información actualizada de una búsqueda guardada. <strong>Editar</strong> y <strong>Eliminar</strong> modifican únicamente tu registro en MongoDB, no los datos de los servicios externos.</p>
-        </section>
-
-        <footer>Proyecto académico · Node.js + Express + MongoDB Atlas · Operaciones CRUD</footer>
+        <footer>Proyecto académico · Node.js + Express + SQLite · Operaciones CRUD</footer>
     </main>
 </body>
 </html>

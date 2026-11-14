@@ -1,7 +1,19 @@
-/* Consultas a IPstack, Marketstack y Zenserp + CRUD de MongoDB */
+/* Consultas a IPstack, Marketstack y Zenserp + CRUD de SQLite */
+
+let tokenAcceso = null;
+let temporizadorSesion;
 
 async function solicitarJSON(url, opciones = {}) {
-    const respuesta = await fetch(url, opciones);
+    const tokenSolicitud = tokenAcceso;
+    const headers = new Headers(opciones.headers);
+    if (tokenSolicitud) headers.set("Authorization", `Bearer ${tokenSolicitud}`);
+    const respuesta = await fetch(url, { ...opciones, headers });
+    if (tokenSolicitud && tokenSolicitud !== tokenAcceso) {
+        throw new Error("La sesión cambió");
+    }
+    if (respuesta.status === 401 && tokenSolicitud) {
+        terminarSesion("Tu sesión venció o dejó de ser válida. Inicia sesión de nuevo.");
+    }
     if (respuesta.status === 204) return null;
     const datos = await respuesta.json().catch(() => null);
     if (!respuesta.ok) throw new Error(datos?.error || `Error HTTP ${respuesta.status}`);
@@ -276,4 +288,63 @@ formRegistro.addEventListener("submit", async (evento) => {
 });
 
 document.getElementById("recargarRegistros").addEventListener("click", cargarRegistros);
-cargarRegistros();
+
+const formLogin = document.getElementById("formLogin");
+const panelAplicacion = document.getElementById("panelAplicacion");
+const botonSalir = document.getElementById("cerrarSesion");
+const enlaceAdministrador = document.getElementById("enlaceAdministrador");
+
+function mostrarSesionActiva(activa) {
+    formLogin.hidden = activa;
+    panelAplicacion.hidden = !activa;
+    botonSalir.hidden = !activa;
+    enlaceAdministrador.hidden = !activa;
+}
+
+function terminarSesion(aviso) {
+    tokenAcceso = null;
+    clearTimeout(temporizadorSesion);
+    mostrarSesionActiva(false);
+    for (const tabla of ["tablaIP", "tablaMercado", "tablaBusqueda", "tablaRegistros"]) {
+        limpiarTabla(tabla);
+    }
+    for (const id of ["guardarIP", "guardarMercado", "guardarBusqueda"]) {
+        const boton = document.getElementById(id);
+        boton.hidden = true;
+        boton.onclick = null;
+    }
+    registros = [];
+    cancelarEdicion();
+    document.getElementById("totalRegistros").textContent = "(0)";
+    mensaje("mensajeSesion", aviso);
+    document.getElementById("correoAdmin").focus();
+}
+
+formLogin.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    const campoClave = document.getElementById("claveAdmin");
+    habilitarFormulario(formLogin, false);
+    try {
+        const { token, expiresIn } = await solicitarJSON("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email: document.getElementById("correoAdmin").value,
+                password: campoClave.value
+            })
+        });
+        tokenAcceso = token;
+        mostrarSesionActiva(true);
+        mensaje("mensajeSesion", "Sesión iniciada");
+        botonSalir.focus();
+        temporizadorSesion = setTimeout(() => terminarSesion("Tu sesión venció. Inicia sesión de nuevo."), expiresIn * 1000);
+        await cargarRegistros();
+    } catch (error) {
+        mensaje("mensajeSesion", error.message, "error");
+    } finally {
+        campoClave.value = "";
+        habilitarFormulario(formLogin, true);
+    }
+});
+
+botonSalir.addEventListener("click", () => terminarSesion("Sesión cerrada"));

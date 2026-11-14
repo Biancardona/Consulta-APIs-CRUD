@@ -1,100 +1,38 @@
-# Consulta de APIs públicas + CRUD (Node.js, Express y MongoDB)
+# Consulta de APIs públicas + CRUD
 
-Proyecto basado en la aplicación original que consultaba **IPstack**, **Marketstack** y **Zenserp**. Se mantienen las tres consultas y se agrega un administrador de registros con operaciones **Create, Read, Update y Delete** sobre una colección en **MongoDB Atlas**.
+Aplicación de Node.js y Express que consulta IPstack, Marketstack y Zenserp y guarda registros en SQLite (`data/registros.db`). Una cuenta administradora habilita el acceso al CRUD y a las consultas externas mediante JWT.
 
-> Los registros guardan el **servicio**, la **consulta** y una **nota**; no modifican los datos de las APIs externas. Puedes crearlos manualmente o guardar una búsqueda hecha desde la interfaz.
+## Configuración local
 
-## Requisitos
-
-- Node.js 20 o superior y npm (se recomienda Node.js 22 LTS o posterior compatible).
-- Un clúster de MongoDB Atlas, un usuario de base de datos y acceso de red configurado.
-- Claves de IPstack, Marketstack y Zenserp para que funcionen **las búsquedas externas**. Sin esas claves, el CRUD en MongoDB sigue disponible y las consultas externas muestran un aviso.
-- No se requiere Python: este es el proyecto original de **Node.js / Express**, independiente de tu práctica de Python.
-
-## 1. Instalar
-
-Desde la Terminal de VS Code, en la carpeta raíz donde está `package.json`:
+Requiere Node.js 20 o posterior compatible con SQLite3. Instala las dependencias desde la raíz:
 
 ```bash
-npm install
+npm ci
 ```
 
-## 2. Variables de entorno
+Si todavía no tienes `.env`, copia `.env.example` a `.env`. Si ya existe, conserva tus claves de proveedores y agrega las variables nuevas.
 
-Copia `.env.example` a `.env`:
+1. Define `ADMIN_EMAIL` con el correo de la cuenta administradora.
+2. Genera un hash bcrypt. Ejecuta el siguiente comando y escribe tu contraseña cuando se te pida. Usa una contraseña exclusiva de hasta 72 bytes.
 
-```bash
-cp .env.example .env
-```
+   ```bash
+   bash -c 'read -rs -p "Contraseña: " clave; printf "\n" >&2; printf "%s" "$clave" | node -e "const fs = require(\"node:fs\"); const bcrypt = require(\"bcryptjs\"); const clave = fs.readFileSync(0, \"utf8\"); if (!clave || Buffer.byteLength(clave) > 72) throw new Error(\"Usa entre 1 y 72 bytes\"); console.log(bcrypt.hashSync(clave, 12));"'
+   ```
 
-Abre `.env` y coloca la URI de MongoDB Atlas y tus claves de servicios:
+   Copia el resultado completo a `ADMIN_PASSWORD_HASH` en el archivo `.env`.
 
-```dotenv
-MONGODB_URI=mongodb+srv://USUARIO:CONTRASENA@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
-MONGODB_DB=consulta_apis_publicas
-IPSTACK_KEY=TU_CLAVE
-MARKETSTACK_KEY=TU_CLAVE
-ZENSERP_KEY=TU_CLAVE
-PORT=3000
-```
+3. Genera el secreto con `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"` y guarda los 64 caracteres en `JWT_SECRET`.
+4. Completa `IPSTACK_KEY`, `MARKETSTACK_KEY` y `ZENSERP_KEY` para consultar a los proveedores. El CRUD funciona sin esas tres claves.
 
-- Puedes utilizar el **mismo clúster de MongoDB Atlas** que configuraste con Python, pero aquí se utiliza la base de datos **`consulta_apis_publicas`** y la colección **`registros`**: no afecta tu colección `libros`.
-- Si el password tiene caracteres reservados de URL, codifícalos (URL encoding).
-- Si aparece `CERTIFICATE_VERIFY_FAILED`, revisa certificados SSL y la configuración TLS de tu equipo; **no** desactives la validación TLS.
-- Nunca subas `.env` a GitHub ni compartas las claves.
-- En MongoDB Atlas, autoriza tu IP actual en **Network Access** y asegúrate de que el usuario de DB pueda leer y escribir en la base de datos indicada.
+Mantén `.env` fuera de Git. Inicia con `npm start`, abre [localhost:3000](http://localhost:3000) e inicia sesión con tu correo y la contraseña original.
 
-## 3. Iniciar la aplicación
+## Autenticación y pruebas
 
-```bash
-npm start
-```
+`POST /api/auth/login` acepta JSON con `email` y `password`. Devuelve un JWT con vigencia de 15 minutos. Envía `Authorization: Bearer <token>` en las solicitudes al CRUD y a los proveedores. Un token ausente, alterado o vencido devuelve `401`. El login aplica un límite por IP y responde `429` al superarse. Usa HTTPS si publicas la aplicación.
 
-Abre **http://localhost:3000** en el navegador. El servidor se conecta a MongoDB antes de empezar a escuchar. Si aparece un error de conexión, revisa `.env`, tu usuario de Atlas y el acceso por IP.
+El cliente conserva el token en memoria. Recargar la página o cerrar sesión elimina el token del navegador. Los tokens emitidos siguen siendo válidos hasta su vencimiento. La cuenta administradora puede gestionar todos los registros existentes.
 
-Para desarrollo con reinicio automático:
-
-```bash
-npm run dev
-```
-
-## 4. Probar las operaciones CRUD en el navegador
-
-1. **CREATE:** En la sección **Administrador de registros**, selecciona un servicio, escribe una consulta y una nota opcional. Pulsa **Crear registro**.
-2. **READ:** Comprueba que aparece en **Registros guardados**. También puedes pulsar **Actualizar lista**.
-3. **UPDATE:** Pulsa **Editar**, modifica la consulta o la nota y selecciona **Guardar cambios**.
-4. **DELETE:** Pulsa **Eliminar** y confirma la operación.
-5. **INTEGRACIÓN:** Haz una consulta con IPstack, Marketstack o Zenserp y pulsa **Guardar esta consulta**; se prellenará el formulario CRUD. O pulsa **Volver a consultar** desde una fila guardada.
-
-Verifica en **MongoDB Atlas → Data Explorer → `consulta_apis_publicas` → `registros`** que los cambios se almacenan realmente.
-
-## 5. Ejecutar pruebas automáticas (sin credenciales de Atlas)
-
-```bash
-npm test
-```
-
-Las pruebas usan una colección simulada en memoria para verificar los endpoints CRUD sin hacer cambios en tu base de datos real. También comprueban las tres rutas externas mediante respuestas simuladas.
-
-## Estructura
-
-```text
-Consulta-APIs-CRUD/
-├── client/
-│   ├── index.html             # Interfaz y formularios
-│   ├── styles.css             # Diseño responsive
-│   └── app.js                 # Fetch y acciones de usuario
-├── server/
-│   ├── app.js                 # API REST de servicios externos y CRUD
-│   ├── db.js                  # Conexión con MongoDB Atlas
-│   └── server.js              # Inicialización de Express
-├── tests/
-│   └── app.test.js            # Pruebas automatizadas
-├── .env.example               # Plantilla de variables
-├── .gitignore
-├── package.json
-└── README.md
-```
+Ejecuta `npm test`. Las pruebas usan una base SQLite en memoria y respuestas simuladas de los proveedores. Cubren el CRUD autenticado, las rutas externas, el rechazo de tokens alterados o vencidos y el límite de intentos.
 
 ## Endpoints REST del CRUD
 
@@ -116,7 +54,3 @@ Ejemplo de cuerpo JSON para POST y PUT:
 ```
 
 Las rutas existentes `/api/ip/:ip`, `/api/mercado/:simbolo` y `/api/busqueda?q=...` se mantienen.
-
-## Importante para publicar en Internet
-
-La versión entregada es una **práctica educativa para ejecutarse localmente**. No tiene cuentas de usuario ni autorización por registro: **cualquiera con acceso al servidor puede crear, ver, editar y eliminar los registros**. Antes de publicarla en un sitio accesible desde Internet, agrega autenticación, autorización por usuario, rate limiting, seguridad de sesiones, políticas de uso y pruebas de seguridad. No publiques este CRUD sin esos controles.

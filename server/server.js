@@ -6,8 +6,8 @@ const { conectarBaseDatos, cerrarBaseDatos } = require("./db");
 
 async function iniciar() {
     try {
-        await conectarBaseDatos();
         const app = createApp();
+        await conectarBaseDatos();
         const puerto = Number(process.env.PORT) || 3000;
         const servidor = app.listen(puerto, () => {
             console.log(`Aplicación disponible en http://localhost:${puerto}`);

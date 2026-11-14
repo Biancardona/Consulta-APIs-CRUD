@@ -31,11 +31,9 @@ function consultarTodos(sql, parametros = []) {
     });
 }
 
-async function conectarBaseDatos() {
+async function conectarBaseDatos(archivo = path.join(__dirname, '../data/registros.db')) {
     if (baseDatos) return;
-    const carpeta = path.join(__dirname, '../data');
-    fs.mkdirSync(carpeta, { recursive: true });
-    const archivo = path.join(carpeta, 'registros.db');
+    if (archivo !== ':memory:') fs.mkdirSync(path.dirname(archivo), { recursive: true });
     baseDatos = await new Promise((resolve, reject) => {
         const db = new sqlite3.Database(archivo, error => error ? reject(error) : resolve(db));
     });

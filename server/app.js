@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
 const net = require("net");
+const { configurarAutenticacion } = require("./auth");
 const { ejecutar, consultarUno, consultarTodos } = require("./db");
 
 const SERVICIOS = new Set(["IPstack", "Marketstack", "Zenserp"]);
@@ -34,11 +35,13 @@ function aRespuesta(documento) {
     };
 }
 
-function createApp({ ejecutarSQL = ejecutar, consultarUnoSQL = consultarUno, consultarTodosSQL = consultarTodos, fetchImpl = fetch } = {}) {
+function createApp({ ejecutarSQL = ejecutar, consultarUnoSQL = consultarUno, consultarTodosSQL = consultarTodos, fetchImpl = fetch, authEnv = process.env } = {}) {
 
     const app = express();
     app.disable("x-powered-by");
     app.use(express.json({ limit: "12kb" }));
+
+    configurarAutenticacion(app, authEnv);
 
     // ---------- CONSULTAS A LAS TRES APIS ORIGINALES ----------
     app.get("/api/ip/:ip", async (req, res, next) => {
@@ -165,8 +168,4 @@ function createApp({ ejecutarSQL = ejecutar, consultarUnoSQL = consultarUno, con
     return app;
 }
 
-// Exporta la aplicación sin abrir la base de datos hasta iniciar server.js.
-const app = createApp();
-module.exports = app;
-module.exports.createApp = createApp;
-module.exports.validarRegistro = validarRegistro;
+module.exports = { createApp, validarRegistro };
